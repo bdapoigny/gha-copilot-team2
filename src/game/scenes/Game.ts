@@ -197,22 +197,27 @@ export class Game extends Scene
             
             // Pulsing glow effect
             graphics.fillStyle(zoneData.color, 0.2);
-            graphics.fillCircle(zoneData.x, zoneData.y, zoneData.radius);
+            graphics.fillCircle(0, 0, zoneData.radius);
             
             // Stadium-style rings
             graphics.lineStyle(3, zoneData.color, 0.9);
-            graphics.strokeCircle(zoneData.x, zoneData.y, zoneData.radius);
+            graphics.strokeCircle(0, 0, zoneData.radius);
             graphics.lineStyle(2, 0xFFFFFF, 0.5);
-            graphics.strokeCircle(zoneData.x, zoneData.y, zoneData.radius - 5);
+            graphics.strokeCircle(0, 0, zoneData.radius - 5);
+            
+            // Position graphics at initial location
+            graphics.setPosition(zoneData.x, zoneData.y);
             
             // Add multiplier text with football score styling
-            this.add.text(zoneData.x, zoneData.y, `${zoneData.multiplier}x`, {
+            const multiplierText = this.add.text(0, 0, `${zoneData.multiplier}x`, {
                 fontSize: '28px',
                 color: '#FFFFFF',
                 fontFamily: 'Arial Black',
                 stroke: '#000000',
                 strokeThickness: 5
             }).setOrigin(0.5);
+            
+            multiplierText.setPosition(zoneData.x, zoneData.y);
             
             // Create zone for detection
             const zone = this.add.zone(zoneData.x, zoneData.y, zoneData.radius * 2, zoneData.radius * 2);
@@ -227,6 +232,31 @@ export class Game extends Scene
                 yoyo: true,
                 repeat: -1
             });
+            
+            // Random movement animation
+            const moveZone = () => {
+                // Keep zones within play area bounds
+                const minX = this.backgroundBounds.left + 100;
+                const maxX = this.backgroundBounds.right - 100;
+                const minY = this.backgroundBounds.top + 150;
+                const maxY = this.backgroundBounds.bottom - 150;
+                
+                const newX = Phaser.Math.Between(minX, maxX);
+                const newY = Phaser.Math.Between(minY, maxY);
+                const duration = Phaser.Math.Between(3000, 6000); // 3-6 seconds
+                
+                this.tweens.add({
+                    targets: [graphics, multiplierText, zone],
+                    x: newX,
+                    y: newY,
+                    duration: duration,
+                    ease: 'Sine.easeInOut',
+                    onComplete: moveZone
+                });
+            };
+            
+            // Start random movement after initial delay
+            this.time.delayedCall(Phaser.Math.Between(500, 2000), moveZone);
         });
     }
     
