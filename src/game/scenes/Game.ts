@@ -358,6 +358,14 @@ export class Game extends Scene
                 // Check if ball hit a pin (for sound/visual effects)
                 if ((bodyA.label === 'pin' && bodyB.label === 'ball') ||
                     (bodyB.label === 'pin' && bodyA.label === 'ball')) {
+                    
+                    // Get collision position
+                    const pinBody = bodyA.label === 'pin' ? bodyA : bodyB;
+                    const collisionX = pinBody.position.x;
+                    const collisionY = pinBody.position.y;
+                    
+                    this.playBounceBeep();
+                    this.createBounceParticles(collisionX, collisionY);
                     EventBus.emit('pin-hit');
                 }
             });
@@ -372,6 +380,9 @@ export class Game extends Scene
         
         this.isLaunching = true;
         EventBus.emit('launch-disabled');
+        
+        // Play launch sound
+        this.playLaunchSound();
         
         const launchX = 512;
         const launchY = 100;
@@ -433,6 +444,7 @@ export class Game extends Scene
                     
                     if (this.currentMultiplier < multiplier) {
                         this.currentMultiplier = multiplier;
+                        this.playMultiplierSound(multiplier);
                         this.showMultiplierFeedback(multiplier);
                         EventBus.emit('multiplier-activated', { multiplier });
                     }
@@ -482,6 +494,9 @@ export class Game extends Scene
         
         this.score += scoreDelta;
         this.scoreText.setText(`SCORE: ${this.score}`);
+        
+        // Play pocket landing sound
+        this.playPocketSound(baseScore);
         
         // Visual feedback
         const feedbackText = this.add.text(pocket.x, this.cameras.main.height - 150, `+${scoreDelta}`, {
@@ -553,6 +568,232 @@ export class Game extends Scene
     changeScene ()
     {
         this.scene.start('GameOver', { score: this.score });
+    }
+    
+    createBounceParticles(x: number, y: number)
+    {
+        // Create small particle explosion at bounce point
+        const particleCount = 8;
+        const colors = [0xFFFFFF, 0xE81E2B, 0xFFD700];
+        
+        for (let i = 0; i < particleCount; i++) {
+            const angle = (Math.PI * 2 * i) / particleCount;
+            const speed = Phaser.Math.Between(50, 120);
+            const velocityX = Math.cos(angle) * speed;
+            const velocityY = Math.sin(angle) * speed;
+            
+            const color = Phaser.Utils.Array.GetRandom(colors);
+            const size = Phaser.Math.Between(2, 4);
+            
+            // Create particle graphic
+            const particle = this.add.circle(x, y, size, color, 1);
+            particle.setDepth(50);
+            
+            // Animate particle
+            this.tweens.add({
+                targets: particle,
+                x: x + velocityX * 0.3,
+                y: y + velocityY * 0.3,
+                alpha: 0,
+                scale: 0,
+                duration: 300,
+                ease: 'Power2',
+                onComplete: () => {
+                    particle.destroy();
+                }
+            });
+        }
+    }
+    
+    playLaunchSound()
+    {
+        const soundManager = this.sound as Phaser.Sound.WebAudioSoundManager;
+        if (!soundManager || !soundManager.context) return;
+        
+        const audioContext = soundManager.context;
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Ascending whoosh sound
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(200, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(600, audioContext.currentTime + 0.15);
+        
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.15);
+    }
+    
+    playMultiplierSound(multiplier: number)
+    {
+        const soundManager = this.sound as Phaser.Sound.WebAudioSoundManager;
+        if (!soundManager || !soundManager.context) return;
+        
+        const audioContext = soundManager.context;
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Higher pitch for higher multiplier
+        const baseFreq = 400 + (multiplier * 200);
+        oscillator.type = 'square';
+        oscillator.frequency.setValueAtTime(baseFreq, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(baseFreq * 1.5, audioContext.currentTime + 0.2);
+        
+        gainNode.gain.setValueAtTime(0.25, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.2);
+    }
+    
+    playPocketSound(pocketValue: number)
+    {
+        const soundManager = this.sound as Phaser.Sound.WebAudioSoundManager;
+        if (!soundManager || !soundManager.context) return;
+        
+        const audioContext = soundManager.context;
+        
+        // Different victory sounds based on pocket value
+        if (pocketValue >= 1000) {
+            // Jackpot! Epic victory fanfare
+            this.playVictoryFanfare(audioContext);
+        } else if (pocketValue >= 500) {
+            // Big win - ascending melody
+            this.playBigWinSound(audioContext);
+        } else if (pocketValue >= 250) {
+            // Medium win - cheerful ding
+            this.playMediumWinSound(audioContext);
+        } else {
+            // Small win - simple positive tone
+            this.playSmallWinSound(audioContext);
+        }
+    }
+    
+    playVictoryFanfare(audioContext: AudioContext)
+    {
+        // Epic 4-note ascending fanfare for jackpot
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const startTime = audioContext.currentTime;
+        
+        notes.forEach((freq, index) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(freq, startTime + index * 0.15);
+            
+            gainNode.gain.setValueAtTime(0.4, startTime + index * 0.15);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + index * 0.15 + 0.3);
+            
+            oscillator.start(startTime + index * 0.15);
+            oscillator.stop(startTime + index * 0.15 + 0.3);
+        });
+    }
+    
+    playBigWinSound(audioContext: AudioContext)
+    {
+        // 3-note ascending melody
+        const notes = [523.25, 659.25, 783.99]; // C5, E5, G5
+        const startTime = audioContext.currentTime;
+        
+        notes.forEach((freq, index) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, startTime + index * 0.12);
+            
+            gainNode.gain.setValueAtTime(0.35, startTime + index * 0.12);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + index * 0.12 + 0.25);
+            
+            oscillator.start(startTime + index * 0.12);
+            oscillator.stop(startTime + index * 0.12 + 0.25);
+        });
+    }
+    
+    playMediumWinSound(audioContext: AudioContext)
+    {
+        // 2-note cheerful ding
+        const notes = [659.25, 783.99]; // E5, G5
+        const startTime = audioContext.currentTime;
+        
+        notes.forEach((freq, index) => {
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, startTime + index * 0.1);
+            
+            gainNode.gain.setValueAtTime(0.3, startTime + index * 0.1);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + index * 0.1 + 0.2);
+            
+            oscillator.start(startTime + index * 0.1);
+            oscillator.stop(startTime + index * 0.1 + 0.2);
+        });
+    }
+    
+    playSmallWinSound(audioContext: AudioContext)
+    {
+        // Simple positive tone
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(523.25, audioContext.currentTime); // C5
+        
+        gainNode.gain.setValueAtTime(0.25, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.15);
+        
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.15);
+    }
+    
+    playBounceBeep()
+    {
+        // Generate a short beep sound using Web Audio API
+        const soundManager = this.sound as Phaser.Sound.WebAudioSoundManager;
+        if (!soundManager || !soundManager.context) return;
+        
+        const audioContext = soundManager.context;
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        
+        // Connect nodes
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        
+        // Configure beep sound (short high-pitched beep)
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(800, audioContext.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(200, audioContext.currentTime + 0.08);
+        
+        // Volume envelope (quick fade)
+        gainNode.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.08);
+        
+        // Play for 80ms
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.08);
     }
     
     shutdown()
