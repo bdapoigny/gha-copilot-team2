@@ -25,6 +25,7 @@ const config: Phaser.Types.Core.GameConfig = {
         Boot,
         Preloader,
         MainMenu,
+        StageSelection,
         MainGame,
         GameOver
     ]

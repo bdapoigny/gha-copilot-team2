@@ -1,10 +1,14 @@
 import { EventBus } from '../EventBus';
 import { Scene } from 'phaser';
+import { StageConfig, DEFAULT_STAGE } from '../StageConfig';
 
 export class Game extends Scene
 {
     camera: Phaser.Cameras.Scene2D.Camera;
     background: Phaser.GameObjects.Image;
+    
+    // Stage configuration
+    private currentStage: StageConfig;
     
     // Pachinko game state
     private score: number = 0;
@@ -26,19 +30,26 @@ export class Game extends Scene
         super('Game');
     }
 
+    init(data: { stage?: StageConfig })
+    {
+        // Use provided stage or default to football
+        this.currentStage = data?.stage || DEFAULT_STAGE;
+    }
+
     create ()
     {
         this.camera = this.cameras.main;
         this.camera.setBackgroundColor(0x0A1F0A);
 
-        // Add football field background
-        this.background = this.add.image(512, 384, 'football-bg');
+        // Add stage-specific background
+        const bgKey = `bg-${this.currentStage.id}`;
+        this.background = this.add.image(512, 384, bgKey);
         this.background.setAlpha(0.85);
         this.background.setDepth(-1);
 
         // Setup game state
         this.score = 0;
-        this.ballsRemaining = 10;
+        this.ballsRemaining = this.currentStage.ballsPerGame;
         this.currentMultiplier = 1;
 
         // Create game elements
@@ -98,60 +109,36 @@ export class Game extends Scene
     
     createPinField()
     {
-        const startX = 100;
-        const startY = 150;
-        const rows = 12;
-        const pinsPerRow = 10;
-        const horizontalSpacing = 80;
-        const verticalSpacing = 50;
-        const pinRadius = 8;
+        const pinRadius = this.currentStage.pinRadius;
         
-        // Create honeycomb pattern with football-themed pins
-        for (let row = 0; row < rows; row++) {
-            const pinsInThisRow = pinsPerRow;
-            const offsetX = (row % 2) * (horizontalSpacing / 2); // Offset every other row
+        // Create pins from stage configuration (hardcoded positions)
+        this.currentStage.pins.forEach((pinPos, index) => {
+            // Create white pin with black outline (visible on any background)
+            const pinGraphics = this.add.graphics();
+            pinGraphics.fillStyle(0xFFFFFF, 1);
+            pinGraphics.fillCircle(0, 0, pinRadius);
+            pinGraphics.lineStyle(2, 0x000000, 1);
+            pinGraphics.strokeCircle(0, 0, pinRadius);
+            pinGraphics.generateTexture('pin-texture-' + index, pinRadius * 2 + 4, pinRadius * 2 + 4);
+            pinGraphics.destroy();
             
-            for (let col = 0; col < pinsInThisRow; col++) {
-                const x = startX + col * horizontalSpacing + offsetX;
-                const y = startY + row * verticalSpacing;
-                
-                // Create football-themed pin (white circle with black outline)
-                const pinGraphics = this.add.graphics();
-                pinGraphics.fillStyle(0xFFFFFF, 1); // White like football
-                pinGraphics.fillCircle(0, 0, pinRadius);
-                pinGraphics.lineStyle(2, 0x000000, 1); // Black outline
-                pinGraphics.strokeCircle(0, 0, pinRadius);
-                // Add some black patches for football pattern
-                pinGraphics.fillStyle(0x000000, 1);
-                pinGraphics.fillCircle(-3, -3, 2);
-                pinGraphics.fillCircle(3, 3, 2);
-                pinGraphics.generateTexture('pin-texture-' + row + '-' + col, pinRadius * 2 + 4, pinRadius * 2 + 4);
-                pinGraphics.destroy();
-                
-                // Create physics body
-                const pin = this.matter.add.image(x, y, 'pin-texture-' + row + '-' + col, undefined, {
-                    isStatic: true,
-                    label: 'pin',
-                    circleRadius: pinRadius,
-                    restitution: 0.8,
-                    friction: 0.001
-                });
-                
-                this.pins.push(pin);
-            }
-        }
+            // Create physics body
+            const pin = this.matter.add.image(pinPos.x, pinPos.y, 'pin-texture-' + index, undefined, {
+                isStatic: true,
+                label: 'pin',
+                circleRadius: pinRadius,
+                restitution: 0.8,
+                friction: 0.001
+            });
+            
+            this.pins.push(pin);
+        });
     }
     
     createMultiplierZones()
     {
-        // Create 3 multiplier zones scattered in the pin field with football theme
-        const zones = [
-            { x: 300, y: 350, multiplier: 2, color: 0xE81E2B, radius: 50 }, // Betclic red
-            { x: 600, y: 450, multiplier: 3, color: 0xFF2E3E, radius: 50 }, // Bright red
-            { x: 450, y: 250, multiplier: 5, color: 0xFFD700, radius: 50 }  // Gold (trophy/winner)
-        ];
-        
-        zones.forEach(zoneData => {
+        // Use multiplier zones from stage configuration
+        this.currentStage.multiplierZones.forEach(zoneData => {
             // Create visual representation with football field styling
             const graphics = this.add.graphics();
             
@@ -200,8 +187,8 @@ export class Game extends Scene
         const y = height - 80;
         const spacing = (width - 200) / (numPockets - 1);
         
-        // Pocket values (higher in center)
-        const values = [100, 250, 500, 1000, 500, 250, 100];
+        // Pocket values from stage configuration
+        const values = this.currentStage.pocketValues;
         const colors = [0x444444, 0x777777, 0xE81E2B, 0xFFD700, 0xE81E2B, 0x777777, 0x444444];
         
         for (let i = 0; i < numPockets; i++) {
@@ -256,8 +243,8 @@ export class Game extends Scene
             strokeThickness: 3
         }).setOrigin(0.5).setDepth(100);
         
-        // Betclic branding
-        this.add.text(width / 2, 80, 'BETCLIC FOOTBALL PACHINKO', {
+        // Betclic branding with stage name
+        this.add.text(width / 2, 80, `BETCLIC ${this.currentStage.displayName.toUpperCase()} PACHINKO`, {
             fontSize: '18px',
             color: '#E81E2B',
             fontFamily: 'Arial Black'
@@ -304,17 +291,14 @@ export class Game extends Scene
         const launchX = 512;
         const launchY = 100;
         
-        // Create ball as circle graphic (since we don't have sprite yet)
-        const ballGraphics = this.add.graphics();
-        ballGraphics.fillStyle(0xE81E2B, 1); // Betclic red ball
-        ballGraphics.fillCircle(0, 0, 10);
-        ballGraphics.generateTexture('ball-texture', 20, 20);
-        ballGraphics.destroy();
+        // Select random ball variant from stage assets
+        const ballIndex = Phaser.Math.Between(1, this.currentStage.assets.balls.length);
+        const ballKey = `ball-${this.currentStage.id}-${ballIndex}`;
         
         // Create ball with physics
-        this.currentBall = this.matter.add.image(launchX, launchY, 'ball-texture', undefined, {
+        this.currentBall = this.matter.add.image(launchX, launchY, ballKey, undefined, {
             label: 'ball',
-            circleRadius: 10,
+            circleRadius: this.currentStage.ballRadius,
             restitution: 0.7,
             friction: 0.001,
             frictionAir: 0.01
@@ -453,14 +437,14 @@ export class Game extends Scene
     resetGame()
     {
         this.score = 0;
-        this.ballsRemaining = 10;
+        this.ballsRemaining = this.currentStage.ballsPerGame;
         this.currentMultiplier = 1;
         
         this.scoreText.setText('SCORE: 0');
-        this.ballsText.setText('BALLS: 10');
+        this.ballsText.setText(`BALLS: ${this.ballsRemaining}`);
         
         EventBus.emit('score-updated', { score: 0, delta: 0 });
-        EventBus.emit('balls-remaining', { count: 10 });
+        EventBus.emit('balls-remaining', { count: this.ballsRemaining });
         EventBus.emit('launch-ready');
     }
 

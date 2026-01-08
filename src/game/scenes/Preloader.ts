@@ -1,4 +1,5 @@
 import { Scene } from 'phaser';
+import { STAGES } from '../StageConfig';
 
 export class Preloader extends Scene
 {
@@ -37,7 +38,17 @@ export class Preloader extends Scene
         
         // Pachinko game assets
         this.load.image('betclic-logo', 'betclic-logo.png');
-        this.load.image('football-bg', 'background.png');
+        
+        // Load all stage-specific assets
+        STAGES.forEach(stage => {
+            // Load background
+            this.load.image(`bg-${stage.id}`, stage.assets.background);
+            
+            // Load all ball variants for this stage
+            stage.assets.balls.forEach((ballPath, index) => {
+                this.load.image(`ball-${stage.id}-${index + 1}`, ballPath);
+            });
+        });
     }
 
     create ()

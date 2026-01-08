@@ -75,7 +75,8 @@ export class MainMenu extends Scene
             this.logoTween = null;
         }
 
-        this.scene.start('Game');
+        // Navigate to stage selection instead of directly to game
+        this.scene.start('StageSelection');
     }
 
     moveLogo (vueCallback: ({ x, y }: { x: number, y: number }) => void)

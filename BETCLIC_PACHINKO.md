@@ -1,13 +1,23 @@
 # Betclic Pachinko Game
 
-A physics-based Pachinko game built with Angular 19 and Phaser 3, featuring Betclic's signature red branding.
+A physics-based Pachinko game built with Angular 19 and Phaser 3, featuring Betclic's signature red branding and **multiple sport stages**.
 
 ## 🎮 Game Features
 
+### Multi-Sport Stages
+- **Stage Selection**: Choose between different sports before playing
+- **Football Stage**: Classic green field with football-themed pins and balls
+- **Basketball Stage**: NBA court theme with orange basketballs
+- **4 Ball Variants Per Sport**: Each stage includes 4 different ball designs that appear randomly
+- **Sport-Specific Assets**:
+  - Custom backgrounds matching each sport (e.g., `bg_football.png`, `bg_basketball.png`)
+  - Multiple ball designs (e.g., `ball_football1.png` through `ball_football4.png`)
+  - Hardcoded pin positions matching the background graphics
+
 ### Core Mechanics
 - **Physics-Based Gameplay**: Utilizes Matter.js physics engine for realistic ball movement and collisions
-- **Pin Field**: 12 rows of gold pins arranged in a honeycomb pattern for unpredictable ball paths
-- **Scoring Pockets**: 7 scoring zones at the bottom with values ranging from 100 to 1000 points
+- **Pin Field**: Hardcoded pin positions integrated into the background image (white/black pins)
+- **Scoring Pockets**: 7 scoring zones at the bottom with values that vary by sport
 - **Ball Management**: Start with 10 balls per game session
 
 ### Distinctive Features
@@ -175,6 +185,38 @@ const zones = [
 ];
 ```
 
+## 🎨 Asset Requirements
+
+The game now supports multiple sport stages with custom assets. Place all assets in `/public/assets/`:
+
+### Football Stage Assets
+- **Background**: `bg_football.png` - Football field background with integrated white/black pins
+- **Balls**: 
+  - `ball_football1.png` - First ball variant
+  - `ball_football2.png` - Second ball variant
+  - `ball_football3.png` - Third ball variant
+  - `ball_football4.png` - Fourth ball variant
+
+### Basketball Stage Assets
+- **Background**: `bg_basketball.png` - Basketball court background with integrated pins
+- **Balls**:
+  - `ball_basketball1.png` - First ball variant
+  - `ball_basketball2.png` - Second ball variant
+  - `ball_basketball3.png` - Third ball variant
+  - `ball_basketball4.png` - Fourth ball variant
+
+### Asset Specifications
+- **Backgrounds**: Should be 1024x768 pixels with pins already drawn on the image
+- **Balls**: Circular ball images with transparent backgrounds, approximately 20x20 pixels
+- **Pin Positions**: Hardcoded in `src/game/StageConfig.ts` to match the background graphics
+
+### Adding New Sports
+To add a new sport stage:
+1. Add assets following the naming convention: `bg_[sport].png` and `ball_[sport]1-4.png`
+2. Create a new stage config in `src/game/StageConfig.ts`
+3. Define hardcoded pin positions that match your background image
+4. Add the stage to the `STAGES` array
+
 ## 🎨 EventBus Communication
 
 The game uses EventBus for Angular-Phaser communication:
@@ -190,6 +232,7 @@ The game uses EventBus for Angular-Phaser communication:
 ### Angular → Phaser Events
 - `power-meter-release`: { power } - Launch ball with power level
 - `game-start`: Restart game
+- `stage-selected`: { stage } - User selected a sport stage (internal)
 
 ## 🐛 Troubleshooting
 
