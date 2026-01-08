@@ -6,56 +6,300 @@
         display: flex;
         justify-content: center;
         align-items: center;
+        position: relative;
     }
 
-    .spritePosition {
-        margin: 10px 0 0 10px;
-        font-size: 0.8em;
+    .game-ui {
+        position: absolute;
+        left: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        z-index: 10;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        background: rgba(18, 18, 18, 0.9);
+        padding: 20px;
+        border-radius: 12px;
+        border: 2px solid var(--betclic-red);
+        min-width: 200px;
+    }
+
+    .stat-display {
+        text-align: center;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 8px;
+        border: 1px solid rgba(226, 0, 26, 0.3);
+    }
+
+    .stat-label {
+        font-size: 12px;
+        color: #888;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .stat-value {
+        font-size: 24px;
+        color: #fff;
+        font-weight: bold;
+        margin-top: 5px;
+    }
+
+    .stat-value.highlight {
+        color: var(--betclic-gold);
+    }
+
+    .power-meter-container {
+        width: 100%;
+    }
+
+    .power-meter-label {
+        text-align: center;
+        font-size: 14px;
+        color: #fff;
+        margin-bottom: 10px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .power-meter {
+        position: relative;
+        width: 100%;
+        height: 120px;
+        background: rgba(0, 0, 0, 0.7);
+        border: 2px solid var(--betclic-red);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .power-bar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        transition: height 0.05s linear;
+        background: linear-gradient(to top, var(--betclic-red), var(--betclic-bright-red));
+    }
+
+    .power-bar.sweet-spot {
+        background: linear-gradient(to top, var(--betclic-gold), #FFE57F);
+        box-shadow: 0 0 20px var(--betclic-gold);
+    }
+
+    .sweet-spot-zone {
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 10%;
+        height: 10%;
+        background: rgba(255, 215, 0, 0.2);
+        border-top: 2px dashed var(--betclic-gold);
+        border-bottom: 2px dashed var(--betclic-gold);
+        pointer-events: none;
+    }
+
+    .power-percentage {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 24px;
+        font-weight: bold;
+        color: #fff;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+        z-index: 1;
+    }
+
+    .launch-button {
+        width: 100%;
+        padding: 15px;
+        background: linear-gradient(135deg, var(--betclic-red), var(--betclic-dark-red));
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        font-size: 18px;
+        font-weight: bold;
+        cursor: pointer;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        transition: all 0.3s;
+        user-select: none;
+
+        &:hover:not(:disabled) {
+            background: linear-gradient(135deg, var(--betclic-bright-red), var(--betclic-red));
+            box-shadow: 0 0 20px rgba(226, 0, 26, 0.5);
+        }
+
+        &:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        &:disabled {
+            background: #444;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+    }
+
+    .launch-button.charging {
+        background: linear-gradient(135deg, var(--betclic-gold), #FFA000);
+        animation: pulse 0.5s infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        50% { box-shadow: 0 0 20px rgba(255, 215, 0, 0.8); }
+    }
+
+    .control-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
     }
 
     .button {
-        width: 140px;
-        margin: 10px;
+        width: 100%;
         padding: 10px;
-        background-color: #000000;
-        color: rgba(255, 255, 255, 0.87);
-        border: 1px solid rgba(255, 255, 255, 0.87);
+        background-color: #000;
+        color: #fff;
+        border: 1px solid var(--betclic-red);
+        border-radius: 6px;
         cursor: pointer;
         transition: all 0.3s;
+        text-transform: uppercase;
+        font-size: 12px;
+        letter-spacing: 1px;
 
         &:hover {
-            border: 1px solid #0ec3c9;
-            color: #0ec3c9;
+            border-color: var(--betclic-bright-red);
+            color: var(--betclic-bright-red);
         }
 
         &:active {
-            background-color: #0ec3c9;
+            background-color: var(--betclic-red);
         }
+    }
 
-        /* Disabled styles */
-        &:disabled {
-            cursor: not-allowed;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            color: rgba(255, 255, 255, 0.3);
-        }
+    .game-over-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.85);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        z-index: 20;
+    }
+
+    .game-over-content {
+        text-align: center;
+        padding: 40px;
+        background: rgba(18, 18, 18, 0.95);
+        border: 3px solid var(--betclic-red);
+        border-radius: 16px;
+    }
+
+    .game-over-title {
+        font-size: 48px;
+        color: var(--betclic-red);
+        font-weight: bold;
+        margin-bottom: 20px;
+        text-transform: uppercase;
+    }
+
+    .final-score {
+        font-size: 36px;
+        color: var(--betclic-gold);
+        font-weight: bold;
+        margin: 20px 0;
+    }
+
+    .instructions {
+        font-size: 14px;
+        color: #aaa;
+        margin-top: 10px;
+        font-style: italic;
     }
 </style>
 
 <main id="app">
     <phaser-game />
-    <div>
-        <div>
-            <button class="button" (click)="changeScene()">Change Scene</button>
+    
+    <div class="game-ui">
+        <!-- Score Display -->
+        <div class="stat-display">
+            <div class="stat-label">Score</div>
+            <div class="stat-value highlight">{{ score }}</div>
         </div>
-        <div>
-            <button class="button" [disabled]="canMoveSprite" (click)="moveSprite()">Toggle Movement</button>
+
+        <!-- Balls Remaining -->
+        <div class="stat-display">
+            <div class="stat-label">Balls Left</div>
+            <div class="stat-value">{{ ballsRemaining }}</div>
         </div>
-        <div class="spritePosition">
-            Sprite Position:
-            <pre>{{ spritePosition | json }}</pre>
+
+        <!-- Multiplier Display -->
+        <div class="stat-display" *ngIf="currentMultiplier > 1">
+            <div class="stat-label">Multiplier</div>
+            <div class="stat-value highlight">{{ currentMultiplier }}x</div>
         </div>
-        <div>
-            <button class="button" (click)="addSprite()">Add New Sprite</button>
+
+        <!-- Power Meter -->
+        <div class="power-meter-container">
+            <div class="power-meter-label">
+                {{ isCharging ? 'CHARGING...' : 'HOLD TO CHARGE' }}
+            </div>
+            <div class="power-meter">
+                <div class="sweet-spot-zone"></div>
+                <div 
+                    class="power-bar" 
+                    [class.sweet-spot]="isInSweetSpot()"
+                    [style.height.%]="powerLevel">
+                </div>
+                <div class="power-percentage">{{ powerLevel | number:'1.0-0' }}%</div>
+            </div>
+            <div class="instructions" *ngIf="!isCharging">
+                Sweet spot: 80-90%
+            </div>
+        </div>
+
+        <!-- Launch Button -->
+        <button 
+            class="launch-button"
+            [class.charging]="isCharging"
+            [disabled]="!canLaunch || ballsRemaining <= 0"
+            (mousedown)="startCharging()"
+            (mouseup)="releaseCharge()"
+            (mouseleave)="cancelCharge()"
+            (touchstart)="startCharging()"
+            (touchend)="releaseCharge()">
+            {{ isCharging ? 'RELEASE!' : 'LAUNCH BALL' }}
+        </button>
+
+        <!-- Control Buttons -->
+        <div class="control-buttons">
+            <button class="button" (click)="restartGame()" *ngIf="gameOver">
+                Play Again
+            </button>
+            <button class="button" (click)="goToMainMenu()">
+                Main Menu
+            </button>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div class="game-over-overlay" *ngIf="gameOver">
+        <div class="game-over-content">
+            <div class="game-over-title">Game Over</div>
+            <div class="final-score">{{ score }} Points</div>
+            <button class="launch-button" (click)="restartGame()">
+                Play Again
+            </button>
         </div>
     </div>
 </main>

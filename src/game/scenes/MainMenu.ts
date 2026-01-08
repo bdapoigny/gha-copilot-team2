@@ -16,15 +16,53 @@ export class MainMenu extends Scene
 
     create ()
     {
-        this.background = this.add.image(512, 384, 'background');
+        const { width, height } = this.cameras.main;
+        
+        // Betclic branded background
+        this.cameras.main.setBackgroundColor(0x121212);
+        
+        // Optional background image (if provided)
+        // this.background = this.add.image(512, 384, 'background').setAlpha(0.3);
 
-        this.logo = this.add.image(512, 300, 'logo').setDepth(100);
+        // Betclic logo
+        this.logo = this.add.image(width / 2, 250, 'betclic-logo').setDepth(100);
+        this.logo.setScale(0.5);
 
-        this.title = this.add.text(512, 460, 'Main Menu', {
-            fontFamily: 'Arial Black', fontSize: 38, color: '#ffffff',
-            stroke: '#000000', strokeThickness: 8,
+        // Subtitle
+        this.add.text(width / 2, 400, 'FOOTBALL PACHINKO', {
+            fontFamily: 'Arial Black',
+            fontSize: '42px',
+            color: '#ffffff',
+            stroke: '#E81E2B',
+            strokeThickness: 6,
             align: 'center'
         }).setOrigin(0.5).setDepth(100);
+
+        // Instructions
+        const instructionText = this.add.text(width / 2, height - 100, 'Click to Start', {
+            fontFamily: 'Arial',
+            fontSize: '32px',
+            color: '#ffffff',
+            align: 'center'
+        }).setOrigin(0.5).setDepth(100);
+
+        // Pulsing animation on instruction text
+        this.tweens.add({
+            targets: instructionText,
+            alpha: 0.3,
+            duration: 1000,
+            yoyo: true,
+            repeat: -1,
+            ease: 'Sine.easeInOut'
+        });
+
+        // Optional logo (when provided by user)
+        // this.logo = this.add.image(512, 400, 'betclic-logo').setDepth(100);
+
+        // Click to start
+        this.input.once('pointerdown', () => {
+            this.changeScene();
+        });
 
         EventBus.emit('current-scene-ready', this);
     }
