@@ -38,6 +38,7 @@ export interface StageConfig {
     
     // Scoring configuration
     pocketValues: number[];
+    pocketColors: number[];  // Colors for the scoring pockets themed to the sport
     
     // Gameplay settings
     ballsPerGame: number;
@@ -82,10 +83,11 @@ export const FOOTBALL_STAGE: StageConfig = {
     ],
     
     pocketValues: [100, 250, 500, 1000, 500, 250, 100],
+    pocketColors: [0x2D5016, 0x3D7020, 0x5E9A35, 0xFFD700, 0x5E9A35, 0x3D7020, 0x2D5016], // Green field colors with gold center
     
     ballsPerGame: 10,
     ballRadius: 10,
-    pinRadius: 8
+    pinRadius: 12  // Larger pins
 };
 
 /**
@@ -125,10 +127,11 @@ export const BASKETBALL_STAGE: StageConfig = {
     ],
     
     pocketValues: [150, 300, 600, 1500, 600, 300, 150], // Higher values for basketball
+    pocketColors: [0x8B4513, 0xA0522D, 0xFF6B35, 0xFFD700, 0xFF6B35, 0xA0522D, 0x8B4513], // Brown/Orange basketball court colors with gold center
     
     ballsPerGame: 10,
     ballRadius: 10,
-    pinRadius: 8
+    pinRadius: 12  // Larger pins
 };
 
 /**

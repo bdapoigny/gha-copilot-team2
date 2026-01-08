@@ -10,6 +10,9 @@ export class Game extends Scene
     // Stage configuration
     private currentStage: StageConfig;
     
+    // Background bounds
+    private backgroundBounds: { left: number; right: number; top: number; bottom: number };
+    
     // Pachinko game state
     private score: number = 0;
     private ballsRemaining: number = 10;
@@ -41,11 +44,26 @@ export class Game extends Scene
         this.camera = this.cameras.main;
         this.camera.setBackgroundColor(0x0A1F0A);
 
-        // Add stage-specific background
+        // Add stage-specific background (preserve aspect ratio)
         const bgKey = `bg-${this.currentStage.id}`;
         this.background = this.add.image(512, 384, bgKey);
+        // Scale proportionally to fit within the game area (contain, not cover)
+        const scaleX = 1024 / this.background.width;
+        const scaleY = 768 / this.background.height;
+        const scale = Math.min(scaleX, scaleY);  // Use min to contain and preserve aspect ratio
+        this.background.setScale(scale);
         this.background.setAlpha(0.85);
         this.background.setDepth(-1);
+
+        // Calculate background bounds for constraining game elements
+        const bgWidth = this.background.width * scale;
+        const bgHeight = this.background.height * scale;
+        this.backgroundBounds = {
+            left: 512 - bgWidth / 2,
+            right: 512 + bgWidth / 2,
+            top: 384 - bgHeight / 2,
+            bottom: 384 + bgHeight / 2
+        };
 
         // Setup game state
         this.score = 0;
@@ -75,63 +93,98 @@ export class Game extends Scene
     
     createBoundaries()
     {
-        const { width, height } = this.cameras.main;
         const wallThickness = 20;
         
-        // Left wall
-        this.matter.add.rectangle(wallThickness / 2, height / 2, wallThickness, height, {
-            isStatic: true,
-            label: 'wall',
-            restitution: 0.3
-        });
+        // Left wall - at background edge
+        const leftWallX = this.backgroundBounds.left + wallThickness / 2;
+        const leftWall = this.matter.add.rectangle(
+            leftWallX,
+            (this.backgroundBounds.top + this.backgroundBounds.bottom) / 2,
+            wallThickness,
+            this.backgroundBounds.bottom - this.backgroundBounds.top,
+            {
+                isStatic: true,
+                label: 'wall',
+                restitution: 0.8,  // High bounce to send ball back
+                friction: 0.1
+            }
+        );
         
-        // Right wall
-        this.matter.add.rectangle(width - wallThickness / 2, height / 2, wallThickness, height, {
-            isStatic: true,
-            label: 'wall',
-            restitution: 0.3
-        });
+        // Right wall - at background edge
+        const rightWallX = this.backgroundBounds.right - wallThickness / 2;
+        const rightWall = this.matter.add.rectangle(
+            rightWallX,
+            (this.backgroundBounds.top + this.backgroundBounds.bottom) / 2,
+            wallThickness,
+            this.backgroundBounds.bottom - this.backgroundBounds.top,
+            {
+                isStatic: true,
+                label: 'wall',
+                restitution: 0.8,  // High bounce to send ball back
+                friction: 0.1
+            }
+        );
         
-        // Top wall
-        this.matter.add.rectangle(width / 2, wallThickness / 2, width, wallThickness, {
-            isStatic: true,
-            label: 'wall',
-            restitution: 0.3
-        });
+        // Top wall - at background edge
+        const topWall = this.matter.add.rectangle(
+            (this.backgroundBounds.left + this.backgroundBounds.right) / 2,
+            this.backgroundBounds.top + wallThickness / 2,
+            this.backgroundBounds.right - this.backgroundBounds.left,
+            wallThickness,
+            {
+                isStatic: true,
+                label: 'wall',
+                restitution: 0.5
+            }
+        );
         
-        // Draw wall visuals
+        // Draw wall visuals at background edges
         const graphics = this.add.graphics();
-        graphics.fillStyle(0xE81E2B, 0.8);
-        graphics.fillRect(0, 0, wallThickness, height); // Left
-        graphics.fillRect(width - wallThickness, 0, wallThickness, height); // Right
-        graphics.fillRect(0, 0, width, wallThickness); // Top
+        graphics.fillStyle(0xE81E2B, 0.3);
+        graphics.fillRect(
+            this.backgroundBounds.left,
+            this.backgroundBounds.top,
+            wallThickness,
+            this.backgroundBounds.bottom - this.backgroundBounds.top
+        ); // Left
+        graphics.fillRect(
+            this.backgroundBounds.right - wallThickness,
+            this.backgroundBounds.top,
+            wallThickness,
+            this.backgroundBounds.bottom - this.backgroundBounds.top
+        ); // Right
+        graphics.fillRect(
+            this.backgroundBounds.left,
+            this.backgroundBounds.top,
+            this.backgroundBounds.right - this.backgroundBounds.left,
+            wallThickness
+        ); // Top
     }
     
     createPinField()
     {
         const pinRadius = this.currentStage.pinRadius;
         
-        // Create pins from stage configuration (hardcoded positions)
+        // Create invisible pins from stage configuration (matching integrated background pins)
         this.currentStage.pins.forEach((pinPos, index) => {
-            // Create white pin with black outline (visible on any background)
-            const pinGraphics = this.add.graphics();
-            pinGraphics.fillStyle(0xFFFFFF, 1);
-            pinGraphics.fillCircle(0, 0, pinRadius);
-            pinGraphics.lineStyle(2, 0x000000, 1);
-            pinGraphics.strokeCircle(0, 0, pinRadius);
-            pinGraphics.generateTexture('pin-texture-' + index, pinRadius * 2 + 4, pinRadius * 2 + 4);
-            pinGraphics.destroy();
+            // Check if pin is within background bounds
+            if (pinPos.x < this.backgroundBounds.left || pinPos.x > this.backgroundBounds.right ||
+                pinPos.y < this.backgroundBounds.top || pinPos.y > this.backgroundBounds.bottom) {
+                return; // Skip pins outside background
+            }
             
-            // Create physics body
-            const pin = this.matter.add.image(pinPos.x, pinPos.y, 'pin-texture-' + index, undefined, {
+            // Create invisible physics body only (no visual)
+            // The background image already contains the pin graphics
+            const pin = this.matter.add.circle(pinPos.x, pinPos.y, pinRadius, {
                 isStatic: true,
                 label: 'pin',
-                circleRadius: pinRadius,
-                restitution: 0.8,
-                friction: 0.001
+                restitution: 1.0,        // Perfect bounce for fluid gameplay
+                friction: 0,             // No friction for smooth bounces
+                frictionStatic: 0,
+                frictionAir: 0
             });
             
-            this.pins.push(pin);
+            this.pins.push(pin as any);
         });
     }
     
@@ -179,17 +232,19 @@ export class Game extends Scene
     
     createScoringPockets()
     {
-        const { width, height } = this.cameras.main;
         const numPockets = 7;
         const pocketWidth = 80;
         const pocketHeight = 60;
-        const startX = 100;
-        const y = height - 80;
-        const spacing = (width - 200) / (numPockets - 1);
+        
+        // Position pockets within background bounds
+        const pocketAreaWidth = this.backgroundBounds.right - this.backgroundBounds.left - pocketWidth;
+        const spacing = pocketAreaWidth / (numPockets - 1);
+        const startX = this.backgroundBounds.left + pocketWidth / 2;
+        const y = this.backgroundBounds.bottom - 40; // 40px from bottom of background
         
         // Pocket values from stage configuration
         const values = this.currentStage.pocketValues;
-        const colors = [0x444444, 0x777777, 0xE81E2B, 0xFFD700, 0xE81E2B, 0x777777, 0x444444];
+        const colors = this.currentStage.pocketColors;  // Use sport-themed colors
         
         for (let i = 0; i < numPockets; i++) {
             const x = startX + i * spacing;
@@ -295,13 +350,16 @@ export class Game extends Scene
         const ballIndex = Phaser.Math.Between(1, this.currentStage.assets.balls.length);
         const ballKey = `ball-${this.currentStage.id}-${ballIndex}`;
         
-        // Create ball with physics
+        // Create ball with physics (fluid and bouncy)
         this.currentBall = this.matter.add.image(launchX, launchY, ballKey, undefined, {
             label: 'ball',
             circleRadius: this.currentStage.ballRadius,
-            restitution: 0.7,
-            friction: 0.001,
-            frictionAir: 0.01
+            restitution: 0.95,       // Very bouncy
+            friction: 0,              // No friction for fluid movement
+            frictionAir: 0.001,       // Minimal air resistance
+            frictionStatic: 0,        // No static friction
+            slop: 0.05,               // Allow slight overlap to prevent jamming
+            density: 0.001            // Light ball for more lively movement
         });
         
         // Calculate launch velocity based on power (0-100)
@@ -322,8 +380,22 @@ export class Game extends Scene
     
     override update()
     {
-        // Check if ball passed through multiplier zones
+        // Check if ball passed through multiplier zones and prevent stuck balls
         if (this.currentBall && this.currentBall.active) {
+            // Anti-stuck mechanism: check if ball is moving too slowly
+            const velocity = this.currentBall.body as MatterJS.BodyType;
+            const speed = Math.sqrt(velocity.velocity.x ** 2 + velocity.velocity.y ** 2);
+            
+            // If ball is nearly stopped in the pin field, give it a gentle nudge
+            if (speed < 0.3 && this.currentBall.y > 150 && this.currentBall.y < 650) {
+                const nudgeX = (Math.random() - 0.5) * 0.5;
+                const nudgeY = 0.3;
+                this.currentBall.setVelocity(
+                    velocity.velocity.x + nudgeX,
+                    velocity.velocity.y + nudgeY
+                );
+            }
+            
             this.multiplierZones.forEach(({ zone, multiplier }) => {
                 const bounds = zone.getBounds();
                 if (this.currentBall && 
