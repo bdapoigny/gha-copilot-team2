@@ -135,6 +135,48 @@ export const BASKETBALL_STAGE: StageConfig = {
 };
 
 /**
+ * Tennis Stage Configuration
+ * Pins are hardcoded to match the bg_tennis.png background
+ */
+export const TENNIS_STAGE: StageConfig = {
+    id: 'tennis',
+    name: 'tennis',
+    displayName: 'Tennis',
+    theme: 'Grand Slam',
+    
+    assets: {
+        background: 'bg_tennis.png',
+        balls: [
+            'ball_tennis1.png',
+            'ball_tennis2.png'
+        ]
+    },
+    
+    // Pin layout for tennis court
+    pins: generateHoneycombPins({
+        startX: 110,
+        startY: 145,
+        rows: 12,
+        pinsPerRow: 10,
+        horizontalSpacing: 78,
+        verticalSpacing: 48
+    }),
+    
+    multiplierZones: [
+        { x: 320, y: 340, multiplier: 2, color: 0x00A651, radius: 50 }, // Tennis green
+        { x: 620, y: 440, multiplier: 3, color: 0xFFEB3B, radius: 50 }, // Tennis ball yellow
+        { x: 470, y: 240, multiplier: 5, color: 0xFFD700, radius: 50 }  // Gold (championship)
+    ],
+    
+    pocketValues: [120, 280, 550, 1200, 550, 280, 120],
+    pocketColors: [0x1B5E20, 0x2E7D32, 0x4CAF50, 0xFFD700, 0x4CAF50, 0x2E7D32, 0x1B5E20], // Tennis court green colors with gold center
+    
+    ballsPerGame: 10,
+    ballRadius: 10,
+    pinRadius: 12  // Larger pins
+};
+
+/**
  * Helper function to generate honeycomb pin pattern
  */
 function generateHoneycombPins(config: {
@@ -166,7 +208,8 @@ function generateHoneycombPins(config: {
  */
 export const STAGES: StageConfig[] = [
     FOOTBALL_STAGE,
-    BASKETBALL_STAGE
+    BASKETBALL_STAGE,
+    TENNIS_STAGE
 ];
 
 /**
